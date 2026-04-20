@@ -74,18 +74,6 @@ namespace AltTabber
                 return;
             }
 
-            string macroKey = MacroKeyBox.Text.Trim();
-            if (!int.TryParse(MacroRepeatBox.Text, out int macroRepeat) || macroRepeat < 1)
-            {
-                MessageBox.Show("Please enter a valid macro repeat count.", "Invalid Macro Repeat");
-                return;
-            }
-            if (!int.TryParse(MacroDelayBox.Text, out int macroDelay) || macroDelay < 1)
-            {
-                MessageBox.Show("Please enter a valid macro delay (ms).", "Invalid Macro Delay");
-                return;
-            }
-
             SetInputsEnabled(false);
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
@@ -93,7 +81,7 @@ namespace AltTabber
 
             try
             {
-                await RunSwitchLoop(selected, targetSeconds, targetMaxSeconds, myAppSeconds, macroKey, macroRepeat, macroDelay, _cts.Token);
+                await RunSwitchLoop(selected, targetSeconds, targetMaxSeconds, myAppSeconds, _cts.Token);
             }
             catch (OperationCanceledException)
             {
@@ -111,23 +99,13 @@ namespace AltTabber
         private void Stop_Click(object sender, RoutedEventArgs e)
             => _cts?.Cancel();
 
-        private async Task RunSwitchLoop(ProcessItem target, int targetMinSeconds, int targetMaxSeconds, int myAppSeconds, string macroKey, int macroRepeat, int macroDelay, CancellationToken token)
+        private async Task RunSwitchLoop(ProcessItem target, int targetMinSeconds, int targetMaxSeconds, int myAppSeconds, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
                 int targetSeconds = (targetMinSeconds == targetMaxSeconds)
                     ? targetMinSeconds
                     : _random.Next(targetMinSeconds, targetMaxSeconds + 1);
-
-                UpdateStatus($"Status: Working on {target.ProcessName}... (timer: {targetSeconds / 60}m {targetSeconds % 60}s)");
-
-                // Fire macro immediately when target app phase begins
-                IntPtr targetHwnd = GetTargetHwnd(target);
-                if (targetHwnd != IntPtr.Zero)
-                {
-                    UpdateStatus($"Status: Sending macro on {target.ProcessName}...");
-                    await MacroSender.SendKeyAsync(targetHwnd, macroKey, macroRepeat, macroDelay, token);
-                }
 
                 UpdateStatus($"Status: Working on {target.ProcessName}... (timer: {targetSeconds / 60}m {targetSeconds % 60}s)");
                 await CountdownAsync(targetSeconds, "Switching to YOUR app in", token);
@@ -137,7 +115,7 @@ namespace AltTabber
                     WindowState = WindowState.Normal;
                     WindowSwitcher.BringToFront(_thisWindowHandle);
                 });
-                UpdateStatus("Status: YOUR app is now active (resting macro...");
+                UpdateStatus("Status: YOUR app is now active.");
 
                 await CountdownAsync(myAppSeconds, $"Switching back to {target.ProcessName} in", token);
 
@@ -155,25 +133,7 @@ namespace AltTabber
                         _cts?.Cancel();
                     }
                 });
-
-                // Small settle delay then fire macro after switching back to target
-                await Task.Delay(800, token);
-                targetHwnd = GetTargetHwnd(target);
-                if (targetHwnd != IntPtr.Zero)
-                {
-                    UpdateStatus($"Status: Sending macro on {target.ProcessName}...");
-                    await MacroSender.SendKeyAsync(targetHwnd, macroKey, macroRepeat, macroDelay, token);
-                }
             }
-        }
-
-        private static IntPtr GetTargetHwnd(ProcessItem target)
-        {
-            try
-            {
-                return Process.GetProcessById(target.ProcessId).MainWindowHandle;
-            }
-            catch { return IntPtr.Zero; }
         }
 
         private async Task CountdownAsync(int totalSeconds, string label, CancellationToken token)
@@ -210,9 +170,6 @@ namespace AltTabber
                 TargetMaxSecondsBox.IsEnabled = enabled;
                 MyAppMinutesBox.IsEnabled = enabled;
                 MyAppSecondsBox.IsEnabled = enabled;
-                MacroKeyBox.IsEnabled = enabled;
-                MacroRepeatBox.IsEnabled = enabled;
-                MacroDelayBox.IsEnabled = enabled;
             });
         }
 
