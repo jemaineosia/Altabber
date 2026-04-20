@@ -11,8 +11,10 @@ namespace AltTabber
     public partial class MainWindow : Window
     {
         private CancellationTokenSource? _cts;
+        private CancellationTokenSource _captchaCts = new();
         private IntPtr _thisWindowHandle;
         private readonly Random _random = new();
+        private int _captchaCount = 0;
 
         public MainWindow()
         {
@@ -21,7 +23,20 @@ namespace AltTabber
             {
                 _thisWindowHandle = new WindowInteropHelper(this).Handle;
                 RefreshProcessList();
+                StartCaptchaDetector();
             };
+            Closing += (s, e) => _captchaCts.Cancel();
+        }
+
+        private void StartCaptchaDetector()
+        {
+            var detector = new CaptchaDetector();
+            detector.CaptchaAppeared += () => Dispatcher.Invoke(() =>
+            {
+                _captchaCount++;
+                CaptchaCounterText.Text = $"Captcha Shows Counter: {_captchaCount}";
+            });
+            _ = detector.RunAsync(_captchaCts.Token);
         }
 
         private void RefreshProcesses_Click(object sender, RoutedEventArgs e)

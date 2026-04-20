@@ -1,7 +1,7 @@
 <Window x:Class="AltTabber.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Aion AltTabber" Height="560" Width="440"
+        Title="Aion AltTabber" Height="610" Width="440"
         ResizeMode="NoResize">
     <StackPanel Margin="20">
 
@@ -63,5 +63,12 @@
 
         <TextBlock x:Name="StartTimeText" Text="" Margin="0,6,0,0"
                    HorizontalAlignment="Center" FontSize="11" Foreground="Gray"/>
+
+        <Border Background="#fff3cd" CornerRadius="6" Padding="8,6" Margin="0,10,0,0">
+            <TextBlock x:Name="CaptchaCounterText"
+                       Text="Captcha Shows Counter: 0"
+                       HorizontalAlignment="Center"
+                       FontSize="13" FontWeight="Bold" Foreground="#856404"/>
+        </Border>
     </StackPanel>
 </Window>
