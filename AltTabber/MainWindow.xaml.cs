@@ -77,6 +77,7 @@ namespace AltTabber
             SetInputsEnabled(false);
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
+            StartTimeText.Text = $"Started at: {DateTime.Now:hh:mm:ss tt}";
             _cts = new CancellationTokenSource();
 
             try
@@ -93,6 +94,7 @@ namespace AltTabber
                 SetInputsEnabled(true);
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
+                StartTimeText.Text = "";
             }
         }
 
