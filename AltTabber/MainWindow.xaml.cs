@@ -12,6 +12,7 @@ namespace AltTabber
     {
         private CancellationTokenSource? _cts;
         private IntPtr _thisWindowHandle;
+        private readonly Random _random = new();
 
         public MainWindow()
         {
@@ -51,7 +52,19 @@ namespace AltTabber
 
             if (!TryGetTotalSeconds(TargetMinutesBox.Text, TargetSecondsBox.Text, out int targetSeconds) || targetSeconds <= 0)
             {
-                MessageBox.Show("Please enter a valid Timer 1 duration.", "Invalid Timer 1");
+                MessageBox.Show("Please enter a valid Timer 1 minimum duration.", "Invalid Timer 1 Min");
+                return;
+            }
+
+            if (!TryGetTotalSeconds(TargetMaxMinutesBox.Text, TargetMaxSecondsBox.Text, out int targetMaxSeconds) || targetMaxSeconds <= 0)
+            {
+                MessageBox.Show("Please enter a valid Timer 1 maximum duration.", "Invalid Timer 1 Max");
+                return;
+            }
+
+            if (targetMaxSeconds < targetSeconds)
+            {
+                MessageBox.Show("Timer 1 Max must be greater than or equal to Min.", "Invalid Timer 1 Range");
                 return;
             }
 
@@ -61,13 +74,14 @@ namespace AltTabber
                 return;
             }
 
+            SetInputsEnabled(false);
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
             _cts = new CancellationTokenSource();
 
             try
             {
-                await RunSwitchLoop(selected, targetSeconds, myAppSeconds, _cts.Token);
+                await RunSwitchLoop(selected, targetSeconds, targetMaxSeconds, myAppSeconds, _cts.Token);
             }
             catch (OperationCanceledException)
             {
@@ -76,6 +90,7 @@ namespace AltTabber
             }
             finally
             {
+                SetInputsEnabled(true);
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
             }
@@ -84,17 +99,21 @@ namespace AltTabber
         private void Stop_Click(object sender, RoutedEventArgs e)
             => _cts?.Cancel();
 
-        private async Task RunSwitchLoop(ProcessItem target, int targetSeconds, int myAppSeconds, CancellationToken token)
+        private async Task RunSwitchLoop(ProcessItem target, int targetMinSeconds, int targetMaxSeconds, int myAppSeconds, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
-                UpdateStatus($"Status: Working on {target.ProcessName}...");
+                int targetSeconds = (targetMinSeconds == targetMaxSeconds)
+                    ? targetMinSeconds
+                    : _random.Next(targetMinSeconds, targetMaxSeconds + 1);
+
+                UpdateStatus($"Status: Working on {target.ProcessName}... (timer: {targetSeconds / 60}m {targetSeconds % 60}s)");
                 await CountdownAsync(targetSeconds, "Switching to YOUR app in", token);
 
                 Dispatcher.Invoke(() =>
                 {
-                    WindowSwitcher.BringToFront(_thisWindowHandle);
                     WindowState = WindowState.Normal;
+                    WindowSwitcher.BringToFront(_thisWindowHandle);
                 });
                 UpdateStatus("Status: YOUR app is now active (resting macro...");
 
@@ -137,6 +156,21 @@ namespace AltTabber
             if (!int.TryParse(secondsText, out int secs) || secs < 0 || secs > 59) return false;
             total = (mins * 60) + secs;
             return true;
+        }
+
+        private void SetInputsEnabled(bool enabled)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                ProcessComboBox.IsEnabled = enabled;
+                RefreshButton.IsEnabled = enabled;
+                TargetMinutesBox.IsEnabled = enabled;
+                TargetSecondsBox.IsEnabled = enabled;
+                TargetMaxMinutesBox.IsEnabled = enabled;
+                TargetMaxSecondsBox.IsEnabled = enabled;
+                MyAppMinutesBox.IsEnabled = enabled;
+                MyAppSecondsBox.IsEnabled = enabled;
+            });
         }
 
         private void UpdateStatus(string message)
