@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Media;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -16,6 +15,7 @@ namespace AltTabber
         private IntPtr _thisWindowHandle;
         private readonly Random _random = new();
         private int _captchaCount = 0;
+        private bool _isRunning = false;
 
         public MainWindow()
         {
@@ -37,8 +37,15 @@ namespace AltTabber
                 _captchaCount++;
                 CaptchaCounterText.Text = $"Captcha Shows Counter: {_captchaCount}";
 
-                if (AlarmSoundCheckBox.IsChecked == true)
-                    SystemSounds.Exclamation.Play();
+                if (_isRunning && AlarmSoundCheckBox.IsChecked == true)
+                    _ = Task.Run(() =>
+                    {
+                        for (int i = 0; i < 5; i++)
+                        {
+                            Console.Beep(1000, 300);
+                            Thread.Sleep(150);
+                        }
+                    });
             });
             _ = detector.RunAsync(_captchaCts.Token);
         }
@@ -99,6 +106,7 @@ namespace AltTabber
             StartTimeText.Text = $"Started at: {DateTime.Now:hh:mm:ss tt}";
             _captchaCount = 0;
             CaptchaCounterText.Text = "Captcha Shows Counter: 0";
+            _isRunning = true;
             _cts = new CancellationTokenSource();
 
             try
@@ -118,6 +126,7 @@ namespace AltTabber
                 StartTimeText.Text = "";
                 _captchaCount = 0;
                 CaptchaCounterText.Text = "Captcha Shows Counter: 0";
+                _isRunning = false;
             }
         }
 
