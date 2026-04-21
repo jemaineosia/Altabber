@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Media;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -35,6 +36,9 @@ namespace AltTabber
             {
                 _captchaCount++;
                 CaptchaCounterText.Text = $"Captcha Shows Counter: {_captchaCount}";
+
+                if (AlarmSoundCheckBox.IsChecked == true)
+                    SystemSounds.Exclamation.Play();
             });
             _ = detector.RunAsync(_captchaCts.Token);
         }
@@ -93,6 +97,8 @@ namespace AltTabber
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
             StartTimeText.Text = $"Started at: {DateTime.Now:hh:mm:ss tt}";
+            _captchaCount = 0;
+            CaptchaCounterText.Text = "Captcha Shows Counter: 0";
             _cts = new CancellationTokenSource();
 
             try
@@ -110,6 +116,8 @@ namespace AltTabber
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
                 StartTimeText.Text = "";
+                _captchaCount = 0;
+                CaptchaCounterText.Text = "Captcha Shows Counter: 0";
             }
         }
 
